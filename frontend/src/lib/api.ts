@@ -102,6 +102,15 @@ export class ApiClient {
     }) => api.post('/users/sso/initiate/', data),
     
     ssoDiscovery: (domain: string) => api.get(`/users/sso/discovery/?domain=${domain}`),
+    
+    // Enhanced auth methods
+    forcePasswordChange: (data: { 
+      new_password: string; 
+      new_password_confirm: string 
+    }) => api.post('/users/force-password-change/', data),
+    
+    resendVerification: (data: { email: string }) => 
+      api.post('/users/resend-verification/', data),
   };
 
   // User management endpoints
@@ -120,6 +129,13 @@ export class ApiClient {
     regenerateBackupCodes: (data: { password: string }) =>
       api.post('/users/mfa/backup-codes/regenerate/', data),
     
+    resendSmsOtp: () => api.post('/users/mfa/resend-sms/'),
+    sendSmsMfaCode: (data: { device_id: string }) =>
+      api.post('/users/mfa/send-sms-code/', data),
+    verifySmsMfaLogin: (data: { otp_code: string; device_id: string }) =>
+      api.post('/users/mfa/verify-sms/', data),
+    disableMfa: (data: { password: string }) => api.post('/users/mfa/disable/', data),
+    
     // Session management
     getSessions: () => api.get('/users/sessions/'),
     revokeSession: (sessionId: string) => api.post(`/users/sessions/${sessionId}/revoke/`),
@@ -137,6 +153,24 @@ export class ApiClient {
     // Roles and permissions
     getRoles: () => api.get('/users/roles/'),
     getPermissions: () => api.get('/users/permissions/'),
+    
+    // SSO Configuration (Admin)
+    getSamlConfigs: () => api.get('/users/sso/saml/'),
+    createSamlConfig: (data: any) => api.post('/users/sso/saml/', data),
+    getSamlConfig: (id: string) => api.get(`/users/sso/saml/${id}/`),
+    updateSamlConfig: (id: string, data: any) => api.patch(`/users/sso/saml/${id}/`, data),
+    deleteSamlConfig: (id: string) => api.delete(`/users/sso/saml/${id}/`),
+    
+    getOidcConfigs: () => api.get('/users/sso/oidc/'),
+    createOidcConfig: (data: any) => api.post('/users/sso/oidc/', data),
+    getOidcConfig: (id: string) => api.get(`/users/sso/oidc/${id}/`),
+    updateOidcConfig: (id: string, data: any) => api.patch(`/users/sso/oidc/${id}/`, data),
+    deleteOidcConfig: (id: string) => api.delete(`/users/sso/oidc/${id}/`),
+    
+    // SSO Sessions
+    getSsoSessions: () => api.get('/users/sso/sessions/'),
+    revokeSsoSession: (sessionId: string) => api.post(`/users/sso/sessions/${sessionId}/revoke/`),
+    ssoLogout: () => api.post('/users/sso/logout/'),
   };
 
   // Event management endpoints

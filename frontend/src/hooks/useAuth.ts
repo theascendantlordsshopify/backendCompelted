@@ -16,6 +16,15 @@ interface AuthContextType {
   register: (data: any) => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
   refreshUser: () => Promise<void>;
+  forcePasswordChange: (data: { new_password: string; new_password_confirm: string }) => Promise<void>;
+  resendVerification: (email: string) => Promise<void>;
+  setupMfa: (data: any) => Promise<any>;
+  verifyMfa: (data: any) => Promise<any>;
+  disableMfa: (data: { password: string }) => Promise<void>;
+  regenerateBackupCodes: (data: { password: string }) => Promise<any>;
+  sendSmsMfaCode: (deviceId: string) => Promise<void>;
+  initiateSso: (data: any) => Promise<string>;
+  ssoDiscovery: (domain: string) => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -140,6 +149,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const forcePasswordChange = async (data: { new_password: string; new_password_confirm: string }) => {
+    const response = await ApiClient.auth.forcePasswordChange(data);
+    
+    // Update user status to active
+    if (user) {
+      const updatedUser = { ...user, account_status: 'active' as const };
+      updateUser(updatedUser);
+    }
+    
+    // Redirect to dashboard
+    router.push('/dashboard');
+  };
+
+  const resendVerification = async (email: string) => {
+    await ApiClient.auth.resendVerification({ email });
+  };
+
+  const setupMfa = async (data: any) => {
+    const response = await ApiClient.users.setupMfa(data);
+    return response.data;
+  };
+
+  const verifyMfa = async (data: any) => {
+    const response = await ApiClient.users.verifyMfa(data);
+    
+    // Update user MFA status
+    if (user) {
+      const updatedUser = { ...user, is_mfa_enabled: true };
+      updateUser(updatedUser);
+    }
+    
+    return response.data;
+  };
+
+  const disableMfa = async (data: { password: string }) => {
+    await ApiClient.users.disableMfa(data);
+    
+    // Update user MFA status
+    if (user) {
+      const updatedUser = { ...user, is_mfa_enabled: false };
+      updateUser(updatedUser);
+    }
+  };
+
+  const regenerateBackupCodes = async (data: { password: string }) => {
+    const response = await ApiClient.users.regenerateBackupCodes(data);
+    return response.data;
+  };
+
+  const sendSmsMfaCode = async (deviceId: string) => {
+    await ApiClient.users.sendSmsMfaCode({ device_id: deviceId });
+  };
+
+  const initiateSso = async (data: any) => {
+    const response = await ApiClient.auth.initiateSso(data);
+    return response.data.auth_url;
+  };
+
+  const ssoDiscovery = async (domain: string) => {
+    const response = await ApiClient.auth.ssoDiscovery(domain);
+    return response.data;
+  };
+
   const value: AuthContextType = {
     user,
     isLoading,
@@ -149,6 +221,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     register,
     updateUser,
     refreshUser,
+    forcePasswordChange,
+    resendVerification,
+    setupMfa,
+    verifyMfa,
+    disableMfa,
+    regenerateBackupCodes,
+    sendSmsMfaCode,
+    initiateSso,
+    ssoDiscovery,
   };
 
   return (

@@ -19,7 +19,7 @@ export function EmailVerificationPage() {
   const [isResending, setIsResending] = useState(false);
   
   const searchParams = useSearchParams();
-  const { verifyEmail, user } = useAuth();
+  const { verifyEmail, user, resendVerification } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -72,8 +72,7 @@ export function EmailVerificationPage() {
 
     try {
       setIsResending(true);
-      // Call the resend verification API
-      // await ApiClient.auth.resendVerification({ email: user.email });
+      await resendVerification(user.email);
       
       toast({
         title: 'Verification email sent',
