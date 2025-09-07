@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { MFALoginStep } from '@/components/mfa/MFALoginStep';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -36,6 +37,8 @@ export function LoginForm({ onSSODiscovery, showSSOOption = true }: LoginFormPro
   const [isLoading, setIsLoading] = useState(false);
   const [ssoLoading, setSsoLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showMfaStep, setShowMfaStep] = useState(false);
+  const [mfaUserData, setMfaUserData] = useState<any>(null);
   
   const { login, initiateSso, ssoDiscovery } = useAuth();
   const { toast } = useToast();
@@ -58,12 +61,26 @@ export function LoginForm({ onSSODiscovery, showSSOOption = true }: LoginFormPro
     try {
       setError(null);
       setIsLoading(true);
-      await login(data);
-      toast({
-        title: 'Welcome back!',
-        description: 'You have been successfully logged in.',
-        variant: 'success',
-      });
+      
+      try {
+        await login(data);
+        toast({
+          title: 'Welcome back!',
+          description: 'You have been successfully logged in.',
+          variant: 'success',
+        });
+      } catch (loginError: any) {
+        // Check if MFA is required
+        if (loginError.response?.data?.code === 'mfa_required') {
+          setMfaUserData({
+            email: data.email,
+            mfa_devices: loginError.response.data.mfa_devices || []
+          });
+          setShowMfaStep(true);
+          return;
+        }
+        throw loginError;
+      }
     } catch (err: any) {
       const errorMessage = getErrorMessage(err);
       setError(errorMessage);
@@ -123,6 +140,33 @@ export function LoginForm({ onSSODiscovery, showSSOOption = true }: LoginFormPro
       setSsoLoading(false);
     }
   };
+
+  const handleMfaSuccess = () => {
+    setShowMfaStep(false);
+    setMfaUserData(null);
+    toast({
+      title: 'Welcome back!',
+      description: 'You have been successfully authenticated.',
+      variant: 'success',
+    });
+  };
+
+  const handleMfaBack = () => {
+    setShowMfaStep(false);
+    setMfaUserData(null);
+    setError(null);
+  };
+
+  if (showMfaStep && mfaUserData) {
+    return (
+      <MFALoginStep
+        userEmail={mfaUserData.email}
+        mfaDevices={mfaUserData.mfa_devices}
+        onSuccess={handleMfaSuccess}
+        onBack={handleMfaBack}
+      />
+    );
+  }
 
   return (
     <Card className="w-full max-w-md mx-auto enterprise-shadow-lg">
